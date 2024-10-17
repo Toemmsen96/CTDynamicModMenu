@@ -155,6 +155,25 @@ namespace CTDynamicMenuMod
             }
         }
 
+        public void UnregisterCommand(CustomCommand command)
+        {
+            if (registeredCommands.Contains(command))
+            {
+                registeredCommands.Remove(command);
+                logger.LogInfo($"Unregistered command: {command.Name}");
+            }
+            else
+            {
+                logger.LogWarning($"Command for {command.Name} is not registered.");
+            }
+        }
+
+        public void DisplayMessage(string message)
+        {
+            lastDisplayedMessage = message;
+            logger.LogInfo(message);
+        }
+
         public static CTDynamicMenuMod Instance => instance; // Singleton pattern to access the mod instance
     }
 }

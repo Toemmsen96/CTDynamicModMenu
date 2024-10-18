@@ -41,6 +41,9 @@
     <Reference Include="UnityEngine.InputLegacyModule">
       <HintPath Condition="Exists('Dependencies\UnityEngine.InputLegacyModule.dll')">Dependencies\UnityEngine.InputLegacyModule.dll</HintPath>
       </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath Condition="Exists('Dependencies\UnityEngine.TextRenderingModule.dll')">Dependencies\UnityEngine.TextRenderingModule.dll</HintPath>
+    </Reference>
     <Reference Include="BepInEx">
       <HintPath Condition="Exists('Dependencies\BepInEx.dll')">Dependencies\BepInEx.dll</HintPath>
       </Reference>

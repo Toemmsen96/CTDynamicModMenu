@@ -64,19 +64,17 @@ namespace CTDynamicMenuMod
 
         private void DrawModMenu()
         {
-            float screenWidth = Screen.width;
-            float screenHeight = Screen.height;
-        
             float buttonHeight = 30f;
             float buttonSpacing = 8f;
-            float categoryHeight = categories.Count * (buttonHeight + buttonSpacing);
             float commandHeight = 0f;
+            float menuWidth = 250f;
         
             foreach (var command in registeredCommands)
             {
                 if (!categories.Contains(command.Category))
                 {
                     categories.Add(command.Category);
+                    menuWidth += buttonSpacing + command.Category.Length*10; // Add some extra width for the category tabs
                 }
                 if (command.Category == selectedCategory)
                 {
@@ -84,24 +82,38 @@ namespace CTDynamicMenuMod
                 }
             }
         
-            float totalHeight = categoryHeight + commandHeight + 100; // Additional space for padding and other elements
-            Rect menuRect = new Rect(menuPosition.x, menuPosition.y, 250, totalHeight);
+            float totalHeight = buttonHeight + commandHeight + 100; // Additional space for padding and other elements
+            Rect menuRect = new Rect(menuPosition.x, menuPosition.y, menuWidth, totalHeight);
+
+            // Define a custom GUIStyle for the box
+            GUIStyle boxStyle = new GUIStyle(GUI.skin.box);
+            boxStyle.border = new RectOffset(3, 3, 3, 3); // Set the border thickness
+            boxStyle.normal.background = MakeTex(2, 2, new Color(0f, 0f, 0f, 0.8f)); // Set a semi-transparent background
+
         
-            GUI.Box(menuRect, "<b><color=red>Mod Menu</color></b>");
+            GUI.Box(menuRect, "<b><color=red>Mod Menu</color></b>", boxStyle);
         
-            float currentYPosition = menuPosition.y + 40; // Start position for category tabs
+            float currentXPosition = menuPosition.x + 10; // Start position for category tabs
+
         
-            // Draw category tabs at the top
+            // Define GUI styles for tabs
+            GUIStyle normalTabStyle = new GUIStyle(GUI.skin.button);
+            GUIStyle selectedTabStyle = new GUIStyle(GUI.skin.button);
+            selectedTabStyle.normal.textColor = Color.green;
+            selectedTabStyle.fontStyle = FontStyle.Bold;
+
+            // Draw category tabs side by side at the top
             foreach (var category in categories)
             {
-                if (GUI.Button(new Rect(menuPosition.x + 10, currentYPosition, 230, buttonHeight), category))
+                GUIStyle tabStyle = category == selectedCategory ? selectedTabStyle : normalTabStyle;
+                if (GUI.Button(new Rect(currentXPosition, menuPosition.y + 40, category.Length*10, buttonHeight), category, tabStyle))
                 {
                     selectedCategory = category;
                 }
-                currentYPosition += buttonHeight + buttonSpacing;
+                currentXPosition += category.Length*10 + buttonSpacing;
             }
         
-            currentYPosition += 20; // Add some space between tabs and commands
+            float currentYPosition = menuPosition.y + 40 + buttonHeight + 20; // Position for commands below the tabs
         
             // Draw commands for the selected category below the tabs
             foreach (var command in registeredCommands)
@@ -197,6 +209,20 @@ namespace CTDynamicMenuMod
                     showMenu = true;
                 }
             }
+        }
+
+        // Helper method to create a texture
+        private Texture2D MakeTex(int width, int height, Color col)
+        {
+            Color[] pix = new Color[width * height];
+            for (int i = 0; i < pix.Length; i++)
+            {
+                pix[i] = col;
+            }
+            Texture2D result = new Texture2D(width, height);
+            result.SetPixels(pix);
+            result.Apply();
+            return result;
         }
 
         public void RegisterCommand(CustomCommand command)

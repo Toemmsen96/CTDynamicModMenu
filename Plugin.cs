@@ -25,6 +25,13 @@ namespace CTDynamicMenuMod
         private static CTDynamicMenuMod instance;
         private ManualLogSource logger = BepInEx.Logging.Logger.CreateLogSource(modGUID);
 
+        private Vector2 menuPosition = new Vector2(100, 100);
+        private bool isDragging = false;
+        private Vector2 dragOffset;
+
+        private List<string> categories = new List<string> {};
+        private string selectedCategory = "None";
+
         void Awake()
         {
             if (instance == null)
@@ -59,38 +66,88 @@ namespace CTDynamicMenuMod
         {
             float screenWidth = Screen.width;
             float screenHeight = Screen.height;
-            Rect menuRect = new Rect(screenWidth / 2 - 125, 0, 250, screenHeight);
-
-            GUI.Box(menuRect, "<b><color=red>Mod Menu</color></b>");
-
+        
             float buttonHeight = 30f;
             float buttonSpacing = 8f;
-            float currentYPosition = 60;
-
+            float categoryHeight = categories.Count * (buttonHeight + buttonSpacing);
+            float commandHeight = 0f;
+        
             foreach (var command in registeredCommands)
             {
-            if (command.Format.Split(' ').Length > 1)
-            {
-                if (GUI.Button(new Rect(screenWidth / 2 - 80, currentYPosition, 160, buttonHeight), command.Name))
+                if (!categories.Contains(command.Category))
                 {
-                    showMenu = false;
-                    showPopup = true;
-                    selectedCommand = command;
+                    categories.Add(command.Category);
+                }
+                if (command.Category == selectedCategory)
+                {
+                    commandHeight += buttonHeight + buttonSpacing;
                 }
             }
-            else
+        
+            float totalHeight = categoryHeight + commandHeight + 100; // Additional space for padding and other elements
+            Rect menuRect = new Rect(menuPosition.x, menuPosition.y, 250, totalHeight);
+        
+            GUI.Box(menuRect, "<b><color=red>Mod Menu</color></b>");
+        
+            float currentYPosition = menuPosition.y + 40; // Start position for category tabs
+        
+            // Draw category tabs at the top
+            foreach (var category in categories)
             {
-                if (GUI.Button(new Rect(screenWidth / 2 - 80, currentYPosition, 160, buttonHeight), command.Name))
+                if (GUI.Button(new Rect(menuPosition.x + 10, currentYPosition, 230, buttonHeight), category))
                 {
-                    command.Execute(null);
+                    selectedCategory = category;
                 }
-            }
                 currentYPosition += buttonHeight + buttonSpacing;
             }
-
-            if (GUI.Button(new Rect(screenWidth / 2 - 80, currentYPosition, 160, buttonHeight), "<b><color=red>Close Menu</color></b>"))
+        
+            currentYPosition += 20; // Add some space between tabs and commands
+        
+            // Draw commands for the selected category below the tabs
+            foreach (var command in registeredCommands)
+            {
+                if (command.Category == selectedCategory)
+                {
+                    if (command.Format.Split(' ').Length > 1)
+                    {
+                        if (GUI.Button(new Rect(menuPosition.x + 10, currentYPosition, 230, buttonHeight), command.Name))
+                        {
+                            showMenu = false;
+                            showPopup = true;
+                            selectedCommand = command;
+                        }
+                    }
+                    else
+                    {
+                        if (GUI.Button(new Rect(menuPosition.x + 10, currentYPosition, 230, buttonHeight), command.Name))
+                        {
+                            command.Execute(null);
+                        }
+                    }
+                    currentYPosition += buttonHeight + buttonSpacing;
+                }
+            }
+        
+            if (GUI.Button(new Rect(menuPosition.x + 10, currentYPosition, 230, buttonHeight), "<b><color=red>Close Menu</color></b>"))
             {
                 showMenu = false;
+            }
+        
+            // Handle dragging
+            if (Event.current.type == EventType.MouseDown && menuRect.Contains(Event.current.mousePosition))
+            {
+                isDragging = true;
+                dragOffset = Event.current.mousePosition - new Vector2(menuRect.x, menuRect.y);
+                Event.current.Use();
+            }
+            if (Event.current.type == EventType.MouseDrag && isDragging)
+            {
+                menuPosition = Event.current.mousePosition - dragOffset;
+                Event.current.Use();
+            }
+            if (Event.current.type == EventType.MouseUp)
+            {
+                isDragging = false;
             }
         }
 
@@ -126,7 +183,7 @@ namespace CTDynamicMenuMod
 
                 if (GUI.Button(new Rect(screenWidth / 2 - 80, screenHeight / 2 - 20, 160, 30), "Confirm"))
                 {
-                    string fullCommand = selectedCommand.Format.Split(' ')[0]+" "+userInput; //add command to front of arguments, not ideal
+                    string fullCommand = selectedCommand.Format.Split(' ')[0] + " " + userInput; //add command to front of arguments, not ideal
                     userInput = string.Empty;
                     showPopup = false;
                     showMenu = true;

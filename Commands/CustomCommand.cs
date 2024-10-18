@@ -11,6 +11,7 @@ namespace CTDynamicMenuMod.Commands
         public abstract string Name { get; }
         public abstract string Description { get; }
         public abstract string Format { get; }
+        public abstract string Category { get; }
 
         public bool Handle(string message)
         {

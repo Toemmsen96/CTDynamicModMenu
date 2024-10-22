@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
-namespace CTDynamicMenuMod.Commands
+namespace CTDynamicModMenu.Commands
 {
     public class CommandInput
     {

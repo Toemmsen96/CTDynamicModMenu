@@ -1,7 +1,7 @@
 using System.Collections.Generic;
-using CTDynamicMenuMod.Commands;
+using CTDynamicModMenu.Commands;
 
-namespace CTDynamicMenuMod.Settings
+namespace CTDynamicModMenu.Settings
 {
     public class Settings{
         public static List<CustomCommand> settingCommands = new List<CustomCommand>{

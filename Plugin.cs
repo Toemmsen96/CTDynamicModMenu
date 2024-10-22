@@ -2,13 +2,13 @@
 using BepInEx.Configuration;
 using UnityEngine;
 using System.Collections.Generic;
-using CTDynamicMenuMod.Commands;
+using CTDynamicModMenu.Commands;
 using BepInEx.Logging;
 
-namespace CTDynamicMenuMod
+namespace CTDynamicModMenu
 {
     [BepInPlugin(modGUID, modName, modVersion)]
-    public class CTDynamicMenuMod : BaseUnityPlugin
+    public class CTDynamicModMenu : BaseUnityPlugin
     {
         private const string modGUID = "CTMods.CTDynamicMenu";
         private const string modName = "CTDynamicMenu";
@@ -24,7 +24,7 @@ namespace CTDynamicMenuMod
         private string fullMessageLog = string.Empty;
         private List<CustomCommand> registeredCommands = new List<CustomCommand>();
         private CustomCommand selectedCommand;
-        private static CTDynamicMenuMod instance;
+        private static CTDynamicModMenu instance;
         private ManualLogSource logger = BepInEx.Logging.Logger.CreateLogSource(modGUID);
         private Vector2 menuPosition = new Vector2(100, 100);
         private bool isDragging = false;
@@ -320,10 +320,10 @@ namespace CTDynamicMenuMod
         public void DisplayMessage(string message)
         {
             lastDisplayedMessage = message;
-            fullMessageLog += message + "\n";
+            fullMessageLog = message + "\n";
             logger.LogInfo(message);
         }
 
-        public static CTDynamicMenuMod Instance => instance; // Singleton pattern to access the mod instance
+        public static CTDynamicModMenu Instance => instance; // Singleton pattern to access the mod instance
     }
 }

@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using CTDynamicMenuMod.Commands;
+using CTDynamicModMenu.Commands;
 
-namespace CTDynamicMenuMod.Settings
+namespace CTDynamicModMenu.Settings
 {
     public class SetLogWindow : CustomCommand
     {
@@ -19,8 +19,8 @@ namespace CTDynamicMenuMod.Settings
 
         public override void Execute(CommandInput message)
         {
-            CTDynamicMenuMod.Instance.showLogWindow = !CTDynamicMenuMod.Instance.showLogWindow;
-            CTDynamicMenuMod.Instance.DisplayMessage($"Log window is now {(CTDynamicMenuMod.Instance.showLogWindow ? "on" : "off")}");
+            CTDynamicModMenu.Instance.showLogWindow = !CTDynamicModMenu.Instance.showLogWindow;
+            CTDynamicModMenu.Instance.DisplayMessage($"Log window is now {(CTDynamicModMenu.Instance.showLogWindow ? "on" : "off")}");
         }
     }
 }

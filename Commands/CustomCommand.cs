@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CTDynamicMenuMod.Commands
+namespace CTDynamicModMenu.Commands
 {
     public abstract class CustomCommand
     {

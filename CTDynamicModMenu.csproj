@@ -38,9 +38,6 @@
     <Reference Include="UnityEngine.IMGUIModule">
       <HintPath Condition="Exists('Dependencies\UnityEngine.IMGUIModule.dll')">Dependencies\UnityEngine.IMGUIModule.dll</HintPath>
     </Reference>
-    <Reference Include="UnityEngine.InputLegacyModule">
-      <HintPath Condition="Exists('Dependencies\UnityEngine.InputLegacyModule.dll')">Dependencies\UnityEngine.InputLegacyModule.dll</HintPath>
-      </Reference>
     <Reference Include="UnityEngine.TextRenderingModule">
       <HintPath Condition="Exists('Dependencies\UnityEngine.TextRenderingModule.dll')">Dependencies\UnityEngine.TextRenderingModule.dll</HintPath>
     </Reference>

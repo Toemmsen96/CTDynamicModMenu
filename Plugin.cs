@@ -4,6 +4,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using CTDynamicModMenu.Commands;
 using BepInEx.Logging;
+using UnityEngine.Windows;
 
 namespace CTDynamicModMenu
 {
@@ -19,9 +20,9 @@ namespace CTDynamicModMenu
         private bool showMenu = false;
         private bool showPopup = false;
         internal bool showLogWindow = false;
-        private string userInput = string.Empty;
+        private string userInput = "";
         private string lastDisplayedMessage = "No message yet";
-        private string fullMessageLog = string.Empty;
+        private string fullMessageLog = "";
         private List<CustomCommand> registeredCommands = new List<CustomCommand>();
         private CustomCommand selectedCommand;
         private static CTDynamicModMenu instance;
@@ -31,7 +32,6 @@ namespace CTDynamicModMenu
         private Vector2 dragOffset;
         private Rect logWindowRect = new Rect(10, 100, 300, 400);
         private Vector2 scrollPosition = Vector2.zero;        
-
         private string selectedCategory = "None";
 
         void Awake()
@@ -65,7 +65,7 @@ namespace CTDynamicModMenu
 
         private void Update()
         {
-            if (Input.GetKeyDown(toggleKey.Value))
+            if (UnityInput.Current.GetKeyDown(toggleKey.Value))
             {
                 showMenu = !showMenu;
             }
@@ -222,7 +222,9 @@ namespace CTDynamicModMenu
         private void OnGUI()
         {
             GUI.Label(new Rect(10, 10, 300, 30), $"<color=red>Press {toggleKey.Value} to toggle Mod Menu</color>", menuStyle);
-        
+
+            //Needs rework: log window is not compatible with old c#
+            /*
             if (showLogWindow)
             {
                 logWindowRect = GUILayout.Window(0, logWindowRect, (id) =>
@@ -233,6 +235,7 @@ namespace CTDynamicModMenu
                     GUI.DragWindow();
                 }, "Log Window");
             }
+            */
         
             if (showMenu)
             {

@@ -10,8 +10,8 @@ namespace CTDynamicModMenu
     [BepInPlugin(modGUID, modName, modVersion)]
     public class CTDynamicModMenu : BaseUnityPlugin
     {
-        private const string modGUID = "CTMods.CTDynamicMenu";
-        private const string modName = "CTDynamicMenu";
+        private const string modGUID = "CTMods.CTDynamicModMenu";
+        private const string modName = "CTDynamicModMenu";
         private const string modVersion = "1.0.0";
 
         private ConfigEntry<KeyCode> toggleKey;

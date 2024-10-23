@@ -11,7 +11,7 @@ namespace CTDynamicModMenu
     [BepInPlugin(modGUID, modName, modVersion)]
     public class CTDynamicModMenu : BaseUnityPlugin
     {
-        private const string modGUID = "CTMods.CTDynamicModMenu";
+        private const string modGUID = "Toemmsen96.CTDynamicModMenu";
         private const string modName = "CTDynamicModMenu";
         private const string modVersion = "1.0.0";
 
@@ -31,8 +31,10 @@ namespace CTDynamicModMenu
         private bool isDragging = false;
         private Vector2 dragOffset;
         private Rect logWindowRect = new Rect(10, 100, 300, 400);
-        private Vector2 scrollPosition = Vector2.zero;        
         private string selectedCategory = "None";
+        private bool isDraggingLogWindow = false;
+        private Vector2 dragOffsetLogWindow;
+
 
         void Awake()
         {
@@ -189,7 +191,15 @@ namespace CTDynamicModMenu
                         }
                         else
                         {
-                            command.Execute(null);
+                            try
+                            {
+                                command.Execute(null);
+                            }
+                            catch (System.Exception e)
+                            {
+                                logger.LogError($"Error executing command {command.Name}: {e.Message}");
+                                lastDisplayedMessage = $"Error executing command {command.Name}: {e.Message}";
+                            }
                         }
                     }
                     startX += commandWidth + commandSpacing;
@@ -223,19 +233,10 @@ namespace CTDynamicModMenu
         {
             GUI.Label(new Rect(10, 10, 300, 30), $"<color=red>Press {toggleKey.Value} to toggle Mod Menu</color>", menuStyle);
 
-            //Needs rework: log window is not compatible with old c#
-            /*
             if (showLogWindow)
             {
-                logWindowRect = GUILayout.Window(0, logWindowRect, (id) =>
-                {
-                    scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUILayout.Width(280), GUILayout.Height(360));
-                    GUILayout.TextArea(fullMessageLog);
-                    GUILayout.EndScrollView();
-                    GUI.DragWindow();
-                }, "Log Window");
+                DrawLogWindow();
             }
-            */
         
             if (showMenu)
             {
@@ -245,6 +246,46 @@ namespace CTDynamicModMenu
             if (showPopup)
             {
                 ShowPopupForUserInput();
+            }
+        }
+
+        private void DrawLogWindow(){
+            // Define a custom GUIStyle for the box
+            GUIStyle boxStyle = new GUIStyle(GUI.skin.box);
+            boxStyle.border = new RectOffset(3, 3, 3, 3); // Set the border thickness
+            boxStyle.normal.background = MakeTex(2, 2, new Color(0f, 0f, 0f, 0.8f)); // Set a semi-transparent background
+
+            Rect windowRect = new Rect(logWindowRect.x, logWindowRect.y, logWindowRect.width, logWindowRect.height);
+            GUI.Box(windowRect, "<b><color=red>Log Window</color></b>", boxStyle);
+
+            float buttonHeight = 30f;
+            float buttonWidth = 100f;
+            float padding = 10f;
+
+            // Display the most recent log message
+            GUI.Label(new Rect(windowRect.x + padding, windowRect.y + padding + buttonHeight, windowRect.width - 2 * padding, windowRect.height - (buttonHeight+2*padding)), lastDisplayedMessage);
+
+            // Close button
+            if (GUI.Button(new Rect(windowRect.x + (windowRect.width - buttonWidth) / 2, windowRect.y + windowRect.height - buttonHeight - padding, buttonWidth, buttonHeight), "<b><color=red>Close</color></b>"))
+            {
+                showLogWindow = false;
+            }
+
+            // Handle dragging
+            if (Event.current.type == EventType.MouseDown && windowRect.Contains(Event.current.mousePosition))
+            {
+                isDraggingLogWindow = true;
+                dragOffsetLogWindow = Event.current.mousePosition - new Vector2(windowRect.x, windowRect.y);
+                Event.current.Use();
+            }
+            if (Event.current.type == EventType.MouseDrag && isDraggingLogWindow)
+            {
+                logWindowRect.position = Event.current.mousePosition - dragOffsetLogWindow;
+                Event.current.Use();
+            }
+            if (Event.current.type == EventType.MouseUp)
+            {
+                isDraggingLogWindow = false;
             }
         }
 
@@ -268,7 +309,15 @@ namespace CTDynamicModMenu
                     userInput = string.Empty;
                     showPopup = false;
                     showMenu = true;
-                    selectedCommand.Execute(CommandInput.Parse(fullCommand));
+                    try
+                    {
+                        selectedCommand.Execute(CommandInput.Parse(fullCommand));
+                    }
+                    catch (System.Exception e)
+                    {
+                        logger.LogError($"Error executing command {selectedCommand.Name}: {e.Message}");
+                        lastDisplayedMessage = $"Error executing command {selectedCommand.Name}: {e.Message}";
+                    }
                     selectedCommand = null;
                 }
 

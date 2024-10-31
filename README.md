@@ -6,7 +6,7 @@ This BepInEx-Mod allows to create Dynamic Mod menus easily.
 - use the included CustomCommand and CommandInput classes to create each Mod to execute
   -> f.e.: MyCustomCommand:CustomCommand   
 - use ```RegisterCommand(CustomCommand) ``` to register any command you want to be executed  
-  -> top of file: Using CTDynamicModMenu.CTDynamicModMenu  
-  -> CTDynamicModMenu.Instance.RegisterCommand(MyCustomCommand)   
+  -> top of file: ```Using CTDynamicModMenu.CTDynamicModMenu;```  
+  -> ```CTDynamicModMenu.Instance.RegisterCommand(MyCustomCommand)```   
 - compile your mod
 - Install both this and your mod as a plugin and enjoy

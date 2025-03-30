@@ -4,7 +4,6 @@ using UnityEngine;
 using System.Collections.Generic;
 using CTDynamicModMenu.Commands;
 using BepInEx.Logging;
-using UnityEngine.Windows;
 
 namespace CTDynamicModMenu
 {
@@ -23,7 +22,7 @@ namespace CTDynamicModMenu
         private string userInput = "";
         private string lastDisplayedMessage = "No message yet";
         private string fullMessageLog = "";
-        private List<CustomCommand> registeredCommands = new List<CustomCommand>();
+        internal List<CustomCommand> registeredCommands = new List<CustomCommand>();
         private CustomCommand selectedCommand;
         private static CTDynamicModMenu instance;
         private ManualLogSource logger = BepInEx.Logging.Logger.CreateLogSource(modGUID);
@@ -70,6 +69,13 @@ namespace CTDynamicModMenu
             if (UnityInput.Current.GetKeyDown(toggleKey.Value))
             {
                 showMenu = !showMenu;
+            }
+            foreach (var command in registeredCommands)
+            {
+                if (command.IsKeybindPressed())
+                {
+                    command.Execute(null);
+                }
             }
         }
 

@@ -1,9 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using CTDynamicModMenu.Commands;
+using UnityEngine;
 
 namespace CTDynamicModMenu.Settings
 {
@@ -16,6 +12,8 @@ namespace CTDynamicModMenu.Settings
         public override string Format => "/setlogwindow";
 
         public override string Category => "Settings";
+        public override bool IsToggle => true;
+        public override KeyCode? Keybind => KeyCode.F11;
 
         public override void Execute(CommandInput message)
         {

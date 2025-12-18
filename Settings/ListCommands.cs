@@ -16,7 +16,7 @@ namespace CTDynamicModMenu.Settings
         public override bool IsToggle => false;
         public override KeyCode? Keybind => KeyCode.F1;
 
-        public override void Execute(CommandInput message)
+        public override void Execute(CommandInput? message)
         {
             string commandList = "Available Commands:\n";
             foreach (var command in CTDynamicModMenu.Instance.registeredCommands)

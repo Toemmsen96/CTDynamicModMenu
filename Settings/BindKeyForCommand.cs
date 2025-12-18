@@ -14,8 +14,12 @@ namespace CTDynamicModMenu.Settings
         public override string Category => "Settings";
         public override bool IsToggle => false;
 
-        public override void Execute(CommandInput message)
+        public override void Execute(CommandInput? message)
         {
+            if (message == null){
+                 CTDynamicModMenu.Instance.DisplayError("Invalid command input.");    
+                return;
+            }
             if (message.Args.Count > 1)
             {
                 string commandName = message.Args[0];
@@ -33,7 +37,7 @@ namespace CTDynamicModMenu.Settings
                 }
                 else
                 {
-                    CTDynamicModMenu.Instance.DisplayMessage($"Command not found: {commandName}");
+                    CTDynamicModMenu.Instance.DisplayError($"Command not found: {commandName}");
                     return;
                 }
 
@@ -47,12 +51,12 @@ namespace CTDynamicModMenu.Settings
                 }
                 else
                 {
-                    CTDynamicModMenu.Instance.DisplayMessage($"Invalid key: {keyName}. Use Unity KeyCode names.");
+                    CTDynamicModMenu.Instance.DisplayError($"Invalid key: {keyName}. Use Unity KeyCode names.");
                 }
             }
             else
             {
-                CTDynamicModMenu.Instance.DisplayMessage("Usage: " + Format);
+                CTDynamicModMenu.Instance.DisplayError("Usage: " + Format);
             }
         }
     }

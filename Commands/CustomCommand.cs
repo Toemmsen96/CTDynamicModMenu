@@ -8,7 +8,7 @@ namespace CTDynamicModMenu.Commands
         public abstract string Name { get; }
         public abstract string Description { get; }
         public abstract string Format { get; }
-        public virtual string AlternativeFormat { get; } = null;
+        public virtual string? AlternativeFormat { get; } = null;
         public abstract string Category { get; }
         
         // Optional toggle functionality
@@ -47,7 +47,7 @@ namespace CTDynamicModMenu.Commands
             return true;
         }
 
-        public abstract void Execute(CommandInput message);
+        public abstract void Execute(CommandInput? message);
         
         // Method to check if keybind is pressed
         public bool IsKeybindPressed()

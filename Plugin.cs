@@ -8,23 +8,25 @@ using BepInEx.Logging;
 namespace CTDynamicModMenu
 {
     [BepInPlugin(modGUID, modName, modVersion)]
-    public class CTDynamicModMenu : BaseUnityPlugin
+    public partial class CTDynamicModMenu : BaseUnityPlugin
     {
         private const string modGUID = "Toemmsen96.CTDynamicModMenu";
         private const string modName = "CTDynamicModMenu";
-        private const string modVersion = "1.0.0";
+        private const string modVersion = "1.0.1";
 
-        private ConfigEntry<KeyCode> toggleKey;
-        private GUIStyle menuStyle;
+        private ConfigEntry<KeyCode>? toggleKey;
+        private GUIStyle? menuStyle;
         private bool showMenu = false;
         private bool showPopup = false;
         internal bool showLogWindow = false;
         private string userInput = "";
         private string lastDisplayedMessage = "No message yet";
-        private string fullMessageLog = "";
+        private List<string> logMessages = new List<string>();
+        private Vector2 logScrollPosition = Vector2.zero;
+        private const int MAX_LOG_MESSAGES = 100;
         internal List<CustomCommand> registeredCommands = new List<CustomCommand>();
-        private CustomCommand selectedCommand;
-        private static CTDynamicModMenu instance;
+        private CustomCommand? selectedCommand;
+        private static CTDynamicModMenu? instance;
         private ManualLogSource logger = BepInEx.Logging.Logger.CreateLogSource(modGUID);
         private Vector2 menuPosition = new Vector2(100, 100);
         private bool isDragging = false;
@@ -64,9 +66,14 @@ namespace CTDynamicModMenu
             logger.LogInfo("Menu initialized");
         }
 
+        private KeyCode GetToggleKey()
+        {
+            return toggleKey?.Value ?? KeyCode.F4;
+        }
+
         private void Update()
         {
-            if (UnityInput.Current.GetKeyDown(toggleKey.Value))
+            if (UnityInput.Current.GetKeyDown(GetToggleKey()))
             {
                 showMenu = !showMenu;
             }
@@ -187,7 +194,8 @@ namespace CTDynamicModMenu
         
                 foreach (var command in row)
                 {
-                    if (GUI.Button(new Rect(startX, currentYPosition, commandWidth, buttonHeight), command.Name))
+                    string color = command.IsToggle ? (command.IsEnabled ? "green" : "red") : "white";
+                    if (GUI.Button(new Rect(startX, currentYPosition, commandWidth, buttonHeight), $"<color={color}>{command.Name}</color>"))
                     {
                         if (command.Format.Split(' ').Length > 1)
                         {
@@ -237,7 +245,7 @@ namespace CTDynamicModMenu
 
         private void OnGUI()
         {
-            GUI.Label(new Rect(10, 10, 300, 30), $"<color=red>Press {toggleKey.Value} to toggle Mod Menu</color>", menuStyle);
+            GUI.Label(new Rect(10, 10, 300, 30), $"<color=red>Press {GetToggleKey()} to toggle Mod Menu</color>", menuStyle);
 
             if (showLogWindow)
             {
@@ -252,86 +260,6 @@ namespace CTDynamicModMenu
             if (showPopup)
             {
                 ShowPopupForUserInput();
-            }
-        }
-
-        private void DrawLogWindow(){
-            // Define a custom GUIStyle for the box
-            GUIStyle boxStyle = new GUIStyle(GUI.skin.box);
-            boxStyle.border = new RectOffset(3, 3, 3, 3); // Set the border thickness
-            boxStyle.normal.background = MakeTex(2, 2, new Color(0f, 0f, 0f, 0.8f)); // Set a semi-transparent background
-
-            Rect windowRect = new Rect(logWindowRect.x, logWindowRect.y, logWindowRect.width, logWindowRect.height);
-            GUI.Box(windowRect, "<b><color=red>Log Window</color></b>", boxStyle);
-
-            float buttonHeight = 30f;
-            float buttonWidth = 100f;
-            float padding = 10f;
-
-            // Display the most recent log message
-            GUI.Label(new Rect(windowRect.x + padding, windowRect.y + padding + buttonHeight, windowRect.width - 2 * padding, windowRect.height - (buttonHeight+2*padding)), lastDisplayedMessage);
-
-            // Close button
-            if (GUI.Button(new Rect(windowRect.x + (windowRect.width - buttonWidth) / 2, windowRect.y + windowRect.height - buttonHeight - padding, buttonWidth, buttonHeight), "<b><color=red>Close</color></b>"))
-            {
-                showLogWindow = false;
-            }
-
-            // Handle dragging
-            if (Event.current.type == EventType.MouseDown && windowRect.Contains(Event.current.mousePosition))
-            {
-                isDraggingLogWindow = true;
-                dragOffsetLogWindow = Event.current.mousePosition - new Vector2(windowRect.x, windowRect.y);
-                Event.current.Use();
-            }
-            if (Event.current.type == EventType.MouseDrag && isDraggingLogWindow)
-            {
-                logWindowRect.position = Event.current.mousePosition - dragOffsetLogWindow;
-                Event.current.Use();
-            }
-            if (Event.current.type == EventType.MouseUp)
-            {
-                isDraggingLogWindow = false;
-            }
-        }
-
-        private void ShowPopupForUserInput()
-        {
-            if (selectedCommand != null)
-            {
-                float screenWidth = Screen.width;
-                float screenHeight = Screen.height;
-                Rect popupRect = new Rect(screenWidth / 2 - 100, screenHeight / 2 - 100, 200, 200);
-
-                GUI.Box(popupRect, "Enter Arguments for Command");
-
-                GUI.SetNextControlName("UserInputField");
-                userInput = GUI.TextField(new Rect(screenWidth / 2 - 80, screenHeight / 2 - 60, 160, 30), userInput);
-                GUI.FocusControl("UserInputField");
-
-                if (GUI.Button(new Rect(screenWidth / 2 - 80, screenHeight / 2 - 20, 160, 30), "Confirm"))
-                {
-                    string fullCommand = selectedCommand.Format.Split(' ')[0] + " " + userInput; //add command to front of arguments, not ideal
-                    userInput = string.Empty;
-                    showPopup = false;
-                    showMenu = true;
-                    try
-                    {
-                        selectedCommand.Execute(CommandInput.Parse(fullCommand));
-                    }
-                    catch (System.Exception e)
-                    {
-                        logger.LogError($"Error executing command {selectedCommand.Name}: {e.Message}");
-                        lastDisplayedMessage = $"Error executing command {selectedCommand.Name}: {e.Message}";
-                    }
-                    selectedCommand = null;
-                }
-
-                if (GUI.Button(new Rect(screenWidth / 2 - 80, screenHeight / 2 + 20, 160, 30), "Cancel"))
-                {
-                    showPopup = false;
-                    showMenu = true;
-                }
             }
         }
 
@@ -373,13 +301,6 @@ namespace CTDynamicModMenu
             {
                 logger.LogWarning($"Command for {command.Name} is not registered.");
             }
-        }
-
-        public void DisplayMessage(string message)
-        {
-            lastDisplayedMessage = message;
-            fullMessageLog = message + "\n";
-            logger.LogInfo(message);
         }
 
         public static CTDynamicModMenu Instance => instance; // Singleton pattern to access the mod instance

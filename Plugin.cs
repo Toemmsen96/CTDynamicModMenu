@@ -36,6 +36,10 @@ namespace CTDynamicModMenu
         private bool isDraggingLogWindow = false;
         private Vector2 dragOffsetLogWindow;
 
+        internal bool showKeybindText = true;
+        internal bool showMenuButton = true;
+        internal bool showButtonKeybindText = true;
+
 
         void Awake()
         {
@@ -49,6 +53,9 @@ namespace CTDynamicModMenu
         private void InitMenu()
         {
             toggleKey = Config.Bind<KeyCode>("Command Settings", "Toggle Key", KeyCode.F4, "Key to toggle the menu");
+            showKeybindText = Config.Bind("Display Settings", "Show Keybind Text", true, "Show keybind text on screen").Value;
+            showMenuButton = Config.Bind("Display Settings", "Show Menu Button", true, "Show menu button on screen").Value;
+            
             menuStyle = new GUIStyle
             {
                 richText = true,
@@ -195,7 +202,8 @@ namespace CTDynamicModMenu
                 foreach (var command in row)
                 {
                     string color = command.IsToggle ? (command.IsEnabled ? "green" : "red") : "white";
-                    if (GUI.Button(new Rect(startX, currentYPosition, commandWidth, buttonHeight), $"<color={color}>{command.Name}</color>"))
+                    string buttontext = CreateButtonText(command);
+                    if (GUI.Button(new Rect(startX, currentYPosition, commandWidth, buttonHeight), $"<color={color}>{buttontext}</color>"))
                     {
                         if (command.Format.Split(' ').Length > 1)
                         {
@@ -245,7 +253,18 @@ namespace CTDynamicModMenu
 
         private void OnGUI()
         {
-            GUI.Label(new Rect(10, 10, 300, 30), $"<color=red>Press {GetToggleKey()} to toggle Mod Menu</color>", menuStyle);
+            if (showKeybindText)
+            {
+                GUI.Label(new Rect(10, 10, 300, 30), $"<color=red>Press {GetToggleKey()} to toggle Mod Menu</color>", menuStyle);
+            }
+
+            if (showMenuButton && !showMenu)
+            {
+                if (GUI.Button(new Rect(10, 50, 200, 30), "<b><color=red>Open Mod Menu</color></b>"))
+                {
+                    showMenu = true;
+                }
+            }
 
             if (showLogWindow)
             {
@@ -305,6 +324,18 @@ namespace CTDynamicModMenu
             else
             {
                 logger.LogWarning($"Command for {command.Name} is not registered.");
+            }
+        }
+
+        public string CreateButtonText(CustomCommand command)
+        {
+            if (showButtonKeybindText && command.Keybind != null)
+            {
+                return $"{command.Name} [{command.Keybind}]";
+            }
+            else
+            {
+                return command.Name;
             }
         }
 

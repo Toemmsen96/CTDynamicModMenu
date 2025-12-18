@@ -8,7 +8,9 @@ namespace CTDynamicModMenu.Settings
             new SetLogWindow(),
             new BindKeyForCommand(),
             new ListCommands(),
-            new SetCommandWindow()
+            new SetCommandWindow(),
+            new ToggleKeybindText(),
+            new ToggleButtonKeybindText()
         };
     }
 }

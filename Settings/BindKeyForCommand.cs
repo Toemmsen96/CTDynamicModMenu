@@ -26,7 +26,8 @@ namespace CTDynamicModMenu.Settings
                 string keyName = message.Args[1];
 
                 
-                var command = CTDynamicModMenu.Instance.registeredCommands.Find(cmd => cmd.Name.ToLower().Contains(commandName.ToLower()));
+                var command = FindCommandByName(commandName);
+                
                 if (command != null)
                 {
                     // Check if the command is already bound to a key
@@ -58,6 +59,21 @@ namespace CTDynamicModMenu.Settings
             {
                 CTDynamicModMenu.Instance.DisplayError("Usage: " + Format);
             }
+        }
+        private CustomCommand? FindCommandByName(string name)
+        {
+            CustomCommand? returnCommand = CTDynamicModMenu.Instance.registeredCommands.Find(cmd => cmd.Name.ToLower().Contains(name.ToLower()));
+            if (returnCommand == null)
+            {
+                CTDynamicModMenu.Instance.registeredCommands.ForEach(cmd =>
+                {
+                    if (cmd.Format.ToLower().Contains(name.ToLower()))
+                    {
+                        returnCommand = cmd;
+                    }
+                });
+            }
+            return returnCommand;
         }
     }
 }

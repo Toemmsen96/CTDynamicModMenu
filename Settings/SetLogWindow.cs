@@ -14,7 +14,6 @@ namespace CTDynamicModMenu.Settings
         public override string Category => "Settings";
         public override bool IsToggle => true;
         public override bool IsEnabled => CTDynamicModMenu.Instance.showLogWindow;
-        public override KeyCode? Keybind => KeyCode.F11;
 
         public override void Execute(CommandInput? message)
         {

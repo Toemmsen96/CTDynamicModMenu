@@ -23,9 +23,19 @@ public partial class CTDynamicModMenu
                                           windowRect.width - 2 * padding, scrollViewHeight);
             
             // Calculate content height based on number of messages
-            float lineHeight = 20f;
-            float contentHeight = logMessages.Count * lineHeight + 10;
-            Rect contentRect = new Rect(0, 0, scrollViewRect.width - 20, contentHeight);
+            GUIStyle labelStyle = GUI.skin.label;
+            float contentWidth = scrollViewRect.width - 20;
+            
+            // Calculate total content height by measuring each message
+            float contentHeight = 10;
+            foreach (string msg in logMessages)
+            {
+                GUIContent content = new GUIContent(msg);
+                float msgHeight = labelStyle.CalcHeight(content, contentWidth);
+                contentHeight += msgHeight;
+            }
+            
+            Rect contentRect = new Rect(0, 0, contentWidth, contentHeight);
             
             // Draw scroll view
             logScrollPosition = GUI.BeginScrollView(scrollViewRect, logScrollPosition, contentRect);
@@ -33,8 +43,10 @@ public partial class CTDynamicModMenu
             float yPos = 0;
             for (int i = logMessages.Count - 1; i >= 0; i--) // Show newest first
             {
-                GUI.Label(new Rect(0, yPos, contentRect.width, lineHeight), logMessages[i]);
-                yPos += lineHeight;
+                GUIContent content = new GUIContent(logMessages[i]);
+                float msgHeight = labelStyle.CalcHeight(content, contentWidth);
+                GUI.Label(new Rect(0, yPos, contentWidth, msgHeight), logMessages[i]);
+                yPos += msgHeight;
             }
             
             GUI.EndScrollView();

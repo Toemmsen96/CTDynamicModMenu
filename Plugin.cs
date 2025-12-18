@@ -261,6 +261,11 @@ namespace CTDynamicModMenu
             {
                 ShowPopupForUserInput();
             }
+
+            if (showCommandWindow)
+            {
+                DrawCommandWindow();
+            }
         }
 
         // Helper method to create a texture

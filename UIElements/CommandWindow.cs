@@ -13,6 +13,8 @@ public partial class CTDynamicModMenu
         
         private void DrawCommandWindow()
         {
+            EnableCursor();
+
             // Define a custom GUIStyle for the box
             GUIStyle boxStyle = new GUIStyle(GUI.skin.box);
             boxStyle.border = new RectOffset(3, 3, 3, 3);
@@ -124,6 +126,7 @@ public partial class CTDynamicModMenu
                 commandInput = "";
                 commandSuggestions.Clear();
                 selectedSuggestionIndex = -1;
+                RecoverCursorState();
             }
         }
 
@@ -190,6 +193,7 @@ public partial class CTDynamicModMenu
             commandSuggestions.Clear();
             selectedSuggestionIndex = -1;
             showCommandWindow = false;
+            RecoverCursorState();
         }
     }
 }

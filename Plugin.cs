@@ -39,6 +39,8 @@ namespace CTDynamicModMenu
         internal bool showKeybindText = true;
         internal bool showMenuButton = true;
         internal bool showButtonKeybindText = true;
+        public CursorLockMode previousCursorLockState;
+        public bool previousCursorVisible;
 
 
         void Awake()
@@ -83,6 +85,14 @@ namespace CTDynamicModMenu
             if (UnityInput.Current.GetKeyDown(GetToggleKey()))
             {
                 showMenu = !showMenu;
+                if (showMenu)
+                {
+                    EnableCursor();
+                }
+                else
+                {
+                    RecoverCursorState();
+                }
             }
             foreach (var command in registeredCommands)
             {
@@ -231,6 +241,7 @@ namespace CTDynamicModMenu
             if (GUI.Button(new Rect(menuPosition.x + (menuWidth - 230) / 2, currentYPosition, 230, buttonHeight), "<b><color=red>Close Menu</color></b>"))
             {
                 showMenu = false;
+                RecoverCursorState();
             }
         
             // Handle dragging
@@ -263,6 +274,7 @@ namespace CTDynamicModMenu
                 if (GUI.Button(new Rect(10, 50, 200, 30), "<b><color=red>Open Mod Menu</color></b>"))
                 {
                     showMenu = true;
+                    EnableCursor();
                 }
             }
 
@@ -273,7 +285,11 @@ namespace CTDynamicModMenu
         
             if (showMenu)
             {
+                EnableCursor();
                 DrawModMenu();
+            } else
+            {
+                //RecoverCursorState();
             }
         
             if (showPopup)
@@ -299,6 +315,28 @@ namespace CTDynamicModMenu
             result.SetPixels(pix);
             result.Apply();
             return result;
+        }
+
+        private void SaveCursorState()
+        {
+            previousCursorVisible = Cursor.visible;
+            previousCursorLockState = Cursor.lockState;
+        }
+
+        public void RecoverCursorState()
+        {
+            Cursor.visible = previousCursorVisible;
+            Cursor.lockState = previousCursorLockState;
+        }
+
+        public void EnableCursor()
+        {
+            if (!showCommandWindow)
+            {
+                SaveCursorState();
+            }
+            Cursor.visible = true;
+            Cursor.lockState = CursorLockMode.None;
         }
 
         public void RegisterCommand(CustomCommand command)

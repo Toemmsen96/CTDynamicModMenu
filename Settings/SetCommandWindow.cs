@@ -17,6 +17,8 @@ namespace CTDynamicModMenu.Settings
 
         public override void Execute(CommandInput? message)
         {
+            CTDynamicModMenu.Instance.EnableCursor();
+
             CTDynamicModMenu.Instance.showCommandWindow = !CTDynamicModMenu.Instance.showCommandWindow;
             IsEnabled = CTDynamicModMenu.Instance.showCommandWindow;
             CTDynamicModMenu.Instance.DisplayMessage($"Command window is now {(CTDynamicModMenu.Instance.showCommandWindow ? "on" : "off")}");

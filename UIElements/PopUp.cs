@@ -8,6 +8,7 @@ public partial class CTDynamicModMenu
     {
         private void ShowPopupForUserInput()
         {
+            EnableCursor();
             if (selectedCommand != null)
             {
                 // Define a custom GUIStyle for the box

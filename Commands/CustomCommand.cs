@@ -10,10 +10,14 @@ namespace CTDynamicModMenu.Commands
         public abstract string Format { get; }
         public virtual string? AlternativeFormat { get; } = null;
         public abstract string Category { get; }
+
+        // Optional configuration functionality
+        public virtual bool HasConfig { get; } = false;
+        public virtual bool PersistConfig { get; } = false;
         
         // Optional toggle functionality
         public virtual bool IsToggle { get; } = false;
-        public virtual bool IsEnabled { get; protected set; } = false;
+        public virtual bool IsEnabled { get; set; } = false;
         
         // Optional keybind functionality
         public virtual KeyCode? Keybind { get; set; } = null;
@@ -40,6 +44,7 @@ namespace CTDynamicModMenu.Commands
             if (IsToggle)
             {
                 IsEnabled = !IsEnabled;
+                SaveConfig();
             }
 
             // Execute command
@@ -60,5 +65,30 @@ namespace CTDynamicModMenu.Commands
                 
             return modifiersMatch && UnityInput.Current.GetKeyDown(Keybind.Value);
         }
+
+        public void LoadConfig()
+        {
+            if (!HasConfig) return;
+            if (Keybind != null)
+            {
+                Keybind = CTDynamicModMenu.Instance.Config.Bind<KeyCode>("Command Settings", $"{Name}: Toggle Key", Keybind.Value, "Key to toggle the menu").Value;
+            }
+            if (IsToggle)
+            {
+                IsEnabled = CTDynamicModMenu.Instance.Config.Bind<bool>("Command Settings", $"{Name}: IsEnabled", IsEnabled, "Whether the command is enabled").Value;
+            }
+        }
+        public void SaveConfig()
+        {
+            if (!HasConfig || !PersistConfig || !CTDynamicModMenu.Instance.persistentSettings) return;
+            if (Keybind != null)
+            {
+                CTDynamicModMenu.Instance.Config.Bind<KeyCode>("Command Settings", $"{Name}: Toggle Key", Keybind.Value, "Key to toggle the menu").Value = Keybind.Value;
+            }
+            if (IsToggle)
+            {
+                CTDynamicModMenu.Instance.Config.Bind<bool>("Command Settings", $"{Name}: IsEnabled", IsEnabled, "Whether the command is enabled").Value = IsEnabled;
+            }
+        } 
     }
 }

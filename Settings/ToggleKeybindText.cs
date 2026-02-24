@@ -12,13 +12,17 @@ namespace CTDynamicModMenu.Settings
         public override string Format => "/togglekeybindtext";
         public override string Category => "Settings";
         public override bool IsToggle => true;
-        public override bool IsEnabled => CTDynamicModMenu.Instance.showKeybindText;
+        public override bool IsEnabled 
+        { 
+            get => CTDynamicModMenu.Instance.showKeybindText;
+            set => CTDynamicModMenu.Instance.showKeybindText = value;
+        }
+        public override bool HasConfig => true;
+        public override bool PersistConfig => true;
 
         public override void Execute(CommandInput? message)
         {
-            CTDynamicModMenu.Instance.showKeybindText = !CTDynamicModMenu.Instance.showKeybindText;
-            IsEnabled = CTDynamicModMenu.Instance.showKeybindText;
-            CTDynamicModMenu.Instance.DisplayMessage($"Keybind text display is now {(CTDynamicModMenu.Instance.showKeybindText ? "on" : "off")}");
+            CTDynamicModMenu.Instance.DisplayMessage($"Keybind text display is now {(IsEnabled ? "on" : "off")}");
         }
     }
 }

@@ -5,12 +5,13 @@ namespace CTDynamicModMenu.Settings
 {
     public class Settings{
         public static List<CustomCommand> settingCommands = new List<CustomCommand>{
-            new SetLogWindow(),
+            new ToggleLogWindow(),
             new BindKeyForCommand(),
             new ListCommands(),
             new SetCommandWindow(),
             new ToggleKeybindText(),
-            new ToggleButtonKeybindText()
+            new ToggleButtonKeybindText(),
+            new SetPersistance()
         };
     }
 }

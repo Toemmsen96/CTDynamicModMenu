@@ -41,6 +41,7 @@ namespace CTDynamicModMenu
         internal bool showButtonKeybindText = true;
         public CursorLockMode previousCursorLockState;
         public bool previousCursorVisible;
+        internal bool persistentSettings = true;
 
 
         void Awake()
@@ -98,6 +99,11 @@ namespace CTDynamicModMenu
             {
                 if (command.IsKeybindPressed())
                 {
+                    if (command.IsToggle)
+                    {
+                        command.IsEnabled = !command.IsEnabled;
+                        command.SaveConfig();
+                    }
                     command.Execute(null);
                 }
             }
@@ -225,6 +231,11 @@ namespace CTDynamicModMenu
                         {
                             try
                             {
+                                if (command.IsToggle)
+                                {
+                                    command.IsEnabled = !command.IsEnabled;
+                                    command.SaveConfig();
+                                }
                                 command.Execute(null);
                             }
                             catch (System.Exception e)
@@ -344,6 +355,7 @@ namespace CTDynamicModMenu
             if (!registeredCommands.Contains(command))
             {
                 registeredCommands.Add(command);
+                command.LoadConfig();
                 logger.LogInfo($"Registered command: {command.Name}");
             }
             else

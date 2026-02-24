@@ -14,6 +14,8 @@ namespace CTDynamicModMenu.Settings
 
         public override string Category => "Help";
         public override bool IsToggle => false;
+        public override bool HasConfig => true;
+        public override bool PersistConfig => true;
         public override KeyCode? Keybind => KeyCode.F1;
 
         public override void Execute(CommandInput? message)

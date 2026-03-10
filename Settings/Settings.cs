@@ -12,7 +12,8 @@ namespace CTDynamicModMenu.Settings
             new ToggleKeybindText(),
             new ToggleButtonKeybindText(),
             new ToggleMenuButton(),
-            new SetPersistance()
+            new SetPersistance(),
+            new SetUIScale()
         };
     }
 }

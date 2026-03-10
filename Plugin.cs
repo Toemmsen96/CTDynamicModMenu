@@ -29,12 +29,33 @@ namespace CTDynamicModMenu
         private static CTDynamicModMenu? instance;
         private ManualLogSource logger = BepInEx.Logging.Logger.CreateLogSource(modGUID);
         private Vector2 menuPosition = new Vector2(100, 100);
+        private Vector2 menuSize = new Vector2(400, 500);
+        private Vector2 minMenuSize = new Vector2(250, 200);
+        internal float uiScale = 1.0f;
         private bool isDragging = false;
         private Vector2 dragOffset;
+        private bool isResizing = false;
+        private ResizeEdge resizeEdge = ResizeEdge.None;
+        private float resizeEdgeThickness = 10f;
         private Rect logWindowRect = new Rect(10, 100, 300, 400);
         private string selectedCategory = "None";
         private bool isDraggingLogWindow = false;
         private Vector2 dragOffsetLogWindow;
+        private Vector2 menuCommandScrollPosition = Vector2.zero;
+        private Vector2 tabScrollPosition = Vector2.zero;
+
+        private enum ResizeEdge
+        {
+            None,
+            Left,
+            Right,
+            Top,
+            Bottom,
+            TopLeft,
+            TopRight,
+            BottomLeft,
+            BottomRight
+        }
 
         internal bool showKeybindText = true;
         internal bool showMenuButton = true;
@@ -58,6 +79,8 @@ namespace CTDynamicModMenu
             toggleKey = Config.Bind<KeyCode>("Command Settings", "Toggle Key", KeyCode.F4, "Key to toggle the menu");
             showKeybindText = Config.Bind("Display Settings", "Show Keybind Text", true, "Show keybind text on screen").Value;
             showMenuButton = Config.Bind("Display Settings", "Show Menu Button", true, "Show menu button on screen").Value;
+            uiScale = Config.Bind("Display Settings", "UI Scale", 1.0f, "UI scale factor (0.5 - 2.0)").Value;
+            uiScale = Mathf.Clamp(uiScale, 0.5f, 2.0f);
             
             menuStyle = new GUIStyle
             {
@@ -109,180 +132,30 @@ namespace CTDynamicModMenu
             }
         }
 
-        private void DrawModMenu()
-        {
-            float buttonHeight = 30f;
-            float buttonSpacing = 8f;
-            float baseMenuWidth = 250f;
-            float menuWidth;
-        
-            // Collect unique categories
-            HashSet<string> uniqueCategories = new HashSet<string>();
-            foreach (var command in registeredCommands)
-            {
-                uniqueCategories.Add(command.Category);
-            }
-        
-            // Calculate total width required for category tabs
-            float totalCategoryWidth = buttonSpacing;
-            foreach (var category in uniqueCategories)
-            {
-                totalCategoryWidth += category.Length * 10 + buttonSpacing;
-            }
-        
-            // Adjust menu width based on total category width
-            menuWidth = System.Math.Max(baseMenuWidth, totalCategoryWidth);
-        
-            // Define a custom GUIStyle for the box
-            GUIStyle boxStyle = new GUIStyle(GUI.skin.box);
-            boxStyle.border = new RectOffset(3, 3, 3, 3); // Set the border thickness
-            boxStyle.normal.background = MakeTex(2, 2, new Color(0f, 0f, 0f, 0.8f)); // Set a semi-transparent background
-        
-            // Calculate the height for category tabs
-            float categoryTabsHeight = buttonHeight + 20; // 20 for padding
-        
-            // Collect commands for the selected category
-            List<CustomCommand> commands = new List<CustomCommand>();
-            foreach (var command in registeredCommands)
-            {
-                if (command.Category == selectedCategory)
-                {
-                    commands.Add(command);
-                }
-            }
-        
-            // Calculate the height for commands
-            float commandWidth = 230;
-            float commandSpacing = buttonSpacing;
-            float maxRowWidth = menuWidth - 20; // Subtracting padding
-        
-            List<List<CustomCommand>> commandRows = new List<List<CustomCommand>>();
-            List<CustomCommand> currentRow = new List<CustomCommand>();
-            float currentRowWidth = 0;
-        
-            foreach (var command in commands)
-            {
-                float commandTotalWidth = commandWidth + commandSpacing;
-                if (currentRowWidth + commandTotalWidth > maxRowWidth)
-                {
-                    commandRows.Add(currentRow);
-                    currentRow = new List<CustomCommand>();
-                    currentRowWidth = 0;
-                }
-                currentRow.Add(command);
-                currentRowWidth += commandTotalWidth;
-            }
-            if (currentRow.Count > 0)
-            {
-                commandRows.Add(currentRow);
-            }
-        
-            float commandsHeight = commandRows.Count * (buttonHeight + commandSpacing);
-        
-            // Calculate the height for the close button
-            float closeButtonHeight = buttonHeight + 20; // 20 for padding
-        
-            // Calculate total height
-            float totalHeight = categoryTabsHeight + commandsHeight + closeButtonHeight + 40; // 40 for additional padding
-        
-            Rect menuRect = new Rect(menuPosition.x, menuPosition.y, menuWidth, totalHeight);
-        
-            GUI.Box(menuRect, "<b><color=red>Mod Menu</color></b>", boxStyle);
-        
-            float currentXPosition = menuPosition.x + buttonSpacing; // Start position for category tabs
-        
-            // Define GUI styles for tabs
-            GUIStyle normalTabStyle = new GUIStyle(GUI.skin.button);
-            GUIStyle selectedTabStyle = new GUIStyle(GUI.skin.button);
-            selectedTabStyle.normal.textColor = Color.green;
-            selectedTabStyle.fontStyle = FontStyle.Bold;
-        
-            // Draw category tabs side by side at the top
-            foreach (var category in uniqueCategories)
-            {
-                GUIStyle tabStyle = category == selectedCategory ? selectedTabStyle : normalTabStyle;
-                if (GUI.Button(new Rect(currentXPosition, menuPosition.y + 40, category.Length * 10, buttonHeight), category, tabStyle))
-                {
-                    selectedCategory = category;
-                }
-                currentXPosition += category.Length * 10 + buttonSpacing;
-            }
-        
-            float currentYPosition = menuPosition.y + 40 + buttonHeight + 20; // Position for commands below the tabs
-        
-            foreach (var row in commandRows)
-            {
-                float rowWidth = row.Count * (commandWidth + commandSpacing) - commandSpacing;
-                float startX = menuPosition.x + (menuWidth - rowWidth) / 2;
-        
-                foreach (var command in row)
-                {
-                    string color = command.IsToggle ? (command.IsEnabled ? "green" : "red") : "white";
-                    string buttontext = CreateButtonText(command);
-                    if (GUI.Button(new Rect(startX, currentYPosition, commandWidth, buttonHeight), $"<color={color}>{buttontext}</color>"))
-                    {
-                        if (command.Format.Split(' ').Length > 1)
-                        {
-                            showMenu = false;
-                            showPopup = true;
-                            selectedCommand = command;
-                        }
-                        else
-                        {
-                            try
-                            {
-                                if (command.IsToggle)
-                                {
-                                    command.IsEnabled = !command.IsEnabled;
-                                    command.SaveConfig();
-                                }
-                                command.Execute(null);
-                            }
-                            catch (System.Exception e)
-                            {
-                                logger.LogError($"Error executing command {command.Name}: {e.Message}");
-                                lastDisplayedMessage = $"Error executing command {command.Name}: {e.Message}";
-                            }
-                        }
-                    }
-                    startX += commandWidth + commandSpacing;
-                }
-                currentYPosition += buttonHeight + commandSpacing;
-            }
-            if (GUI.Button(new Rect(menuPosition.x + (menuWidth - 230) / 2, currentYPosition, 230, buttonHeight), "<b><color=red>Close Menu</color></b>"))
-            {
-                showMenu = false;
-                RecoverCursorState();
-            }
-        
-            // Handle dragging
-            if (Event.current.type == EventType.MouseDown && menuRect.Contains(Event.current.mousePosition))
-            {
-                isDragging = true;
-                dragOffset = Event.current.mousePosition - new Vector2(menuRect.x, menuRect.y);
-                Event.current.Use();
-            }
-            if (Event.current.type == EventType.MouseDrag && isDragging)
-            {
-                menuPosition = Event.current.mousePosition - dragOffset;
-                Event.current.Use();
-            }
-            if (Event.current.type == EventType.MouseUp)
-            {
-                isDragging = false;
-            }
-        }
-
         private void OnGUI()
         {
+            UpdateCursor();
+            
             if (showKeybindText)
             {
-                GUI.Label(new Rect(10, 10, 300, 30), $"<color=red>Press {GetToggleKey()} to toggle Mod Menu</color>", menuStyle);
+                GUIStyle scaledMenuStyle = new GUIStyle(menuStyle);
+                scaledMenuStyle.fontSize = (int)(20 * uiScale);
+                GUI.Label(new Rect(10, 10, 300 * uiScale, 30 * uiScale), $"<color=red>Press {GetToggleKey()} to toggle Mod Menu</color>", scaledMenuStyle);
             }
 
             if (showMenuButton && !showMenu)
             {
-                if (GUI.Button(new Rect(10, 50, 200, 30), "<b><color=red>Open Mod Menu</color></b>"))
+                GUIStyle buttonStyle = new GUIStyle(GUI.skin.button);
+                buttonStyle.fontSize = (int)(13 * uiScale);
+                buttonStyle.fontStyle = FontStyle.Bold;
+                buttonStyle.normal.background = MakeRoundedTex(16, 16, new Color(0.8f, 0.2f, 0.2f, 0.9f), 5);
+                buttonStyle.hover.background = MakeRoundedTex(16, 16, new Color(1f, 0.3f, 0.3f, 1f), 5);
+                buttonStyle.border = new RectOffset(5, 5, 5, 5);
+                
+                Rect buttonRect = new Rect(10, 50, 200 * uiScale, 32 * uiScale);
+                SetHoverCursor(buttonRect);
+                
+                if (GUI.Button(buttonRect, "<b><color=white>Open Mod Menu</color></b>", buttonStyle))
                 {
                     showMenu = true;
                     EnableCursor();
@@ -314,18 +187,37 @@ namespace CTDynamicModMenu
             }
         }
 
-        // Helper method to create a texture
-        private Texture2D MakeTex(int width, int height, Color col)
+        private void ExecuteCommand(CustomCommand command)
         {
-            Color[] pix = new Color[width * height];
-            for (int i = 0; i < pix.Length; i++)
+            if (command.Format.Split(' ').Length > 1)
             {
-                pix[i] = col;
+                showMenu = false;
+                showPopup = true;
+                selectedCommand = command;
             }
-            Texture2D result = new Texture2D(width, height);
-            result.SetPixels(pix);
-            result.Apply();
-            return result;
+            else
+            {
+                try
+                {
+                    if (command.IsToggle)
+                    {
+                        command.IsEnabled = !command.IsEnabled;
+                        command.SaveConfig();
+                    }
+                    command.Execute(null);
+                }
+                catch (System.Exception e)
+                {
+                    logger.LogError($"Error executing command {command.Name}: {e.Message}");
+                    lastDisplayedMessage = $"Error executing command {command.Name}: {e.Message}";
+                }
+            }
+        }
+
+        internal void SaveConfig()
+        {
+            Config.Bind("Display Settings", "UI Scale", 1.0f).Value = uiScale;
+            Config.Save();
         }
 
         private void SaveCursorState()

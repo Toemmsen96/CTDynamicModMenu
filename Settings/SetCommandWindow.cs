@@ -17,8 +17,6 @@ namespace CTDynamicModMenu.Settings
             get => CTDynamicModMenu.Instance.showCommandWindow;
             set => CTDynamicModMenu.Instance.showCommandWindow = value;
         }
-        public override bool HasConfig => true;
-        public override bool PersistConfig => true;
         public override KeyCode? Keybind { get; set; } = KeyCode.F11;
 
         public override void Execute(CommandInput? message)

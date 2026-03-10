@@ -30,5 +30,20 @@ public partial class CTDynamicModMenu
             
             logger.LogError(message);
         }
+
+        public void DisplayWarning(string message)
+        {
+            string formattedMessage = "<color=yellow>Warning:</color> " + message;
+            lastDisplayedMessage = formattedMessage;
+            logMessages.Add(formattedMessage);
+            
+            // Keep only the 100 most recent messages
+            if (logMessages.Count > MAX_LOG_MESSAGES)
+            {
+                logMessages.RemoveAt(0);
+            }
+            
+            logger.LogWarning(message);
+        }
     }
 }

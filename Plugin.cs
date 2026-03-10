@@ -12,7 +12,7 @@ namespace CTDynamicModMenu
     {
         private const string modGUID = "Toemmsen96.CTDynamicModMenu";
         private const string modName = "CTDynamicModMenu";
-        private const string modVersion = "1.0.1";
+        private const string modVersion = "1.2.0";
 
         private ConfigEntry<KeyCode>? toggleKey;
         private GUIStyle? menuStyle;
@@ -389,6 +389,8 @@ namespace CTDynamicModMenu
             }
         }
 
+#pragma warning disable CS8603 // Possible null reference return.
         public static CTDynamicModMenu Instance => instance; // Singleton pattern to access the mod instance
+#pragma warning restore CS8603 // Possible null reference return.
     }
 }

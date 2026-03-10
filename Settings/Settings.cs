@@ -11,6 +11,7 @@ namespace CTDynamicModMenu.Settings
             new SetCommandWindow(),
             new ToggleKeybindText(),
             new ToggleButtonKeybindText(),
+            new ToggleMenuButton(),
             new SetPersistance()
         };
     }

@@ -27,7 +27,7 @@ namespace CTDynamicModMenu.Commands
 
         public bool Handle(string message)
         {
-            CommandInput command = CommandInput.Parse(message);
+            CommandInput? command = CommandInput.Parse(message);
 
             if (command == null)
             {
@@ -44,11 +44,11 @@ namespace CTDynamicModMenu.Commands
             if (IsToggle)
             {
                 IsEnabled = !IsEnabled;
-                SaveConfig();
             }
 
             // Execute command
             this.Execute(command);
+            SaveConfig();
             return true;
         }
 
@@ -77,7 +77,11 @@ namespace CTDynamicModMenu.Commands
             {
                 IsEnabled = CTDynamicModMenu.Instance.Config.Bind<bool>("Command Settings", $"{Name}: IsEnabled", IsEnabled, "Whether the command is enabled").Value;
             }
+            LoadCustomConfig();
         }
+        
+        // Override this method in derived classes to load custom persisted data
+        public virtual void LoadCustomConfig() { }
         public void SaveConfig()
         {
             if (!HasConfig || !PersistConfig || !CTDynamicModMenu.Instance.persistentSettings) return;
@@ -89,6 +93,10 @@ namespace CTDynamicModMenu.Commands
             {
                 CTDynamicModMenu.Instance.Config.Bind<bool>("Command Settings", $"{Name}: IsEnabled", IsEnabled, "Whether the command is enabled").Value = IsEnabled;
             }
-        } 
+            SaveCustomConfig();
+        }
+        
+        // Override this method in derived classes to save custom persisted data
+        public virtual void SaveCustomConfig() { } 
     }
 }

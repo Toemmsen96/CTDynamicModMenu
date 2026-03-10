@@ -5,11 +5,11 @@ namespace CTDynamicModMenu.Commands
 {
     public class CommandInput
     {
-        public string Command { get; private set; }
+        public string? Command { get; private set; }
 
         public List<string> Args { get; private set; } = new List<string>();
 
-        public static CommandInput Parse(string input)
+        public static CommandInput? Parse(string input)
         {
             // Check for command and args
             Regex regex = new Regex(@"/(\S+)(?:\s+(""([^""]+)""|\S+))*");

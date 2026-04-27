@@ -1,9 +1,13 @@
 ﻿using BepInEx;
 using BepInEx.Configuration;
 using UnityEngine;
+using UnityEngine.Rendering;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using CTDynamicModMenu.Commands;
 using BepInEx.Logging;
+using CTDynamicModMenu.Rendering;
 
 namespace CTDynamicModMenu
 {
@@ -13,6 +17,16 @@ namespace CTDynamicModMenu
         private const string modGUID = "Toemmsen96.CTDynamicModMenu";
         private const string modName = "CTDynamicModMenu";
         private const string modVersion = "1.2.0";
+        private const int overlayGuiDepth = int.MinValue + 1000;
+
+        private enum OverlayRenderer
+        {
+            UnityImGui,
+            DearImGuiDirect3D,
+            DearImGuiOpenGL,
+            DearImGuiVulkan,
+            DearImGuiMetal
+        }
 
         private ConfigEntry<KeyCode>? toggleKey;
         private GUIStyle? menuStyle;
@@ -35,6 +49,13 @@ namespace CTDynamicModMenu
         private string selectedCategory = "None";
         private bool isDraggingLogWindow = false;
         private Vector2 dragOffsetLogWindow;
+        private GraphicsDeviceType detectedGraphicsBackend = GraphicsDeviceType.Null;
+        private OverlayRenderer activeOverlayRenderer = OverlayRenderer.UnityImGui;
+        private IDearImGuiRenderBackend? dearImGuiBackend;
+        private int dearImGuiFramesWithoutPresent;
+        private bool dearImGuiPresentationLogged;
+        private bool appIsFocused = true;
+        private const int DearImGuiPresentationTimeoutFrames = 300;
 
         internal bool showKeybindText = true;
         internal bool showMenuButton = true;
@@ -50,7 +71,136 @@ namespace CTDynamicModMenu
             {
                 instance = this;
             }
+
+            logger.LogInfo($"CTDynamicModMenu starting. Assembly: {typeof(CTDynamicModMenu).Assembly.Location}");
+            DetectAndSelectRenderer();
             InitMenu();
+            InitializeSelectedOverlayRenderer();
+        }
+
+        private void OnApplicationFocus(bool hasFocus)
+        {
+            appIsFocused = hasFocus;
+            if (hasFocus)
+                dearImGuiFramesWithoutPresent = 0;
+        }
+
+        private void OnDestroy()
+        {
+            if (dearImGuiBackend != null)
+            {
+                dearImGuiBackend.Shutdown();
+                dearImGuiBackend = null;
+            }
+
+            dearImGuiActive = false;
+        }
+
+        private void DetectAndSelectRenderer()
+        {
+            detectedGraphicsBackend = SystemInfo.graphicsDeviceType;
+            activeOverlayRenderer = SelectOverlayRenderer(detectedGraphicsBackend);
+
+            logger.LogInfo($"Detected graphics backend: {detectedGraphicsBackend}");
+            logger.LogInfo($"Selected UI renderer: {activeOverlayRenderer}");
+
+            if (activeOverlayRenderer == OverlayRenderer.UnityImGui)
+            {
+                logger.LogWarning("No backend-specific Dear ImGui provider detected; using Unity IMGUI fallback.");
+            }
+        }
+
+        private void InitializeSelectedOverlayRenderer()
+        {
+            if (activeOverlayRenderer == OverlayRenderer.UnityImGui)
+            {
+                dearImGuiActive = false;
+                return;
+            }
+
+            dearImGuiBackend = ReflectionDearImGuiRenderBackend.TryCreate(detectedGraphicsBackend, logger);
+            if (dearImGuiBackend == null)
+            {
+                logger.LogWarning("Dear ImGui renderer was selected but no backend provider class was found. Falling back to Unity IMGUI.");
+                activeOverlayRenderer = OverlayRenderer.UnityImGui;
+                dearImGuiActive = false;
+                return;
+            }
+
+            bool initialized;
+            try
+            {
+                initialized = dearImGuiBackend.Initialize();
+            }
+            catch (Exception e)
+            {
+                logger.LogError($"Dear ImGui backend {dearImGuiBackend.BackendName} threw during Initialize(): {e}");
+                initialized = false;
+            }
+
+            if (!initialized)
+            {
+                logger.LogWarning($"Failed to initialize Dear ImGui backend {dearImGuiBackend.BackendName}. Falling back to Unity IMGUI.");
+                activeOverlayRenderer = OverlayRenderer.UnityImGui;
+                dearImGuiActive = false;
+                dearImGuiBackend = null;
+                return;
+            }
+
+            dearImGuiActive = true;
+            dearImGuiFramesWithoutPresent = 0;
+            dearImGuiPresentationLogged = false;
+            logger.LogInfo($"Dear ImGui backend initialized: {dearImGuiBackend.BackendName}");
+        }
+
+        private OverlayRenderer SelectOverlayRenderer(GraphicsDeviceType backend)
+        {
+            // Prefer backend-specific Dear ImGui renderers when available, and safely fall back.
+            switch (backend)
+            {
+                case GraphicsDeviceType.Direct3D11:
+                case GraphicsDeviceType.Direct3D12:
+                    if (IsRendererAvailable(OverlayRenderer.DearImGuiDirect3D))
+                    {
+                        return OverlayRenderer.DearImGuiDirect3D;
+                    }
+                    break;
+
+                case GraphicsDeviceType.OpenGLCore:
+                case GraphicsDeviceType.OpenGLES2:
+                case GraphicsDeviceType.OpenGLES3:
+                    if (IsRendererAvailable(OverlayRenderer.DearImGuiOpenGL))
+                    {
+                        return OverlayRenderer.DearImGuiOpenGL;
+                    }
+                    break;
+
+                case GraphicsDeviceType.Vulkan:
+                    if (IsRendererAvailable(OverlayRenderer.DearImGuiVulkan))
+                    {
+                        return OverlayRenderer.DearImGuiVulkan;
+                    }
+                    break;
+
+                case GraphicsDeviceType.Metal:
+                    if (IsRendererAvailable(OverlayRenderer.DearImGuiMetal))
+                    {
+                        return OverlayRenderer.DearImGuiMetal;
+                    }
+                    break;
+            }
+
+            return OverlayRenderer.UnityImGui;
+        }
+
+        private bool IsRendererAvailable(OverlayRenderer renderer)
+        {
+            if (renderer == OverlayRenderer.UnityImGui)
+            {
+                return true;
+            }
+
+            return ReflectionDearImGuiRenderBackend.TryCreate(detectedGraphicsBackend, logger) != null;
         }
 
         private void InitMenu()
@@ -105,6 +255,44 @@ namespace CTDynamicModMenu
                         command.SaveConfig();
                     }
                     command.Execute(null);
+                }
+            }
+
+            if (dearImGuiActive)
+            {
+                RenderDearImGuiFrame(Time.unscaledDeltaTime);
+
+                bool expectsVisibleOverlay = showMenu || showPopup || showLogWindow || showCommandWindow || showMenuButton || showKeybindText;
+                bool presentedFrame = dearImGuiBackend != null && dearImGuiBackend.ConsumePresentedFrame();
+
+                if (presentedFrame)
+                {
+                    dearImGuiFramesWithoutPresent = 0;
+                    if (!dearImGuiPresentationLogged)
+                    {
+                        logger.LogInfo("Dear ImGui is presenting frames.");
+                        dearImGuiPresentationLogged = true;
+                    }
+                }
+                else if (expectsVisibleOverlay && appIsFocused)
+                {
+                    dearImGuiFramesWithoutPresent++;
+                    if (dearImGuiFramesWithoutPresent == DearImGuiPresentationTimeoutFrames)
+                    {
+                        logger.LogWarning("Dear ImGui did not present any frames for 300 updates; falling back to Unity IMGUI renderer.");
+                        activeOverlayRenderer = OverlayRenderer.UnityImGui;
+                        dearImGuiActive = false;
+
+                        if (dearImGuiBackend != null)
+                        {
+                            dearImGuiBackend.Shutdown();
+                            dearImGuiBackend = null;
+                        }
+                    }
+                }
+                else
+                {
+                    dearImGuiFramesWithoutPresent = 0;
                 }
             }
         }
@@ -275,6 +463,31 @@ namespace CTDynamicModMenu
 
         private void OnGUI()
         {
+            if (activeOverlayRenderer != OverlayRenderer.UnityImGui)
+            {
+                return;
+            }
+
+            if (menuStyle == null)
+            {
+                return;
+            }
+
+            int previousDepth = GUI.depth;
+            GUI.depth = overlayGuiDepth;
+
+            try
+            {
+                DrawOverlayGui();
+            }
+            finally
+            {
+                GUI.depth = previousDepth;
+            }
+        }
+
+        private void DrawOverlayGui()
+        {
             if (showKeybindText)
             {
                 GUI.Label(new Rect(10, 10, 300, 30), $"<color=red>Press {GetToggleKey()} to toggle Mod Menu</color>", menuStyle);
@@ -293,24 +506,26 @@ namespace CTDynamicModMenu
             {
                 DrawLogWindow();
             }
-        
+
             if (showMenu)
             {
                 EnableCursor();
                 DrawModMenu();
-            } else
+            }
+            else
             {
                 //RecoverCursorState();
-            }
-        
-            if (showPopup)
-            {
-                ShowPopupForUserInput();
             }
 
             if (showCommandWindow)
             {
                 DrawCommandWindow();
+            }
+
+            // Draw popup last so it is always on top of all other menu windows.
+            if (showPopup)
+            {
+                ShowPopupForUserInput();
             }
         }
 

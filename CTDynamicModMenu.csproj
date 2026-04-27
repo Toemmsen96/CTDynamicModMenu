@@ -10,6 +10,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="ImGui.NET" Version="1.91.6.1" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="0Harmony">
       <HintPath Condition="Exists('Dependencies\0Harmony.dll')">Dependencies\0Harmony.dll</HintPath>
     </Reference>
@@ -33,6 +37,9 @@
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
       <HintPath Condition="Exists('Dependencies\UnityEngine.CoreModule.dll')">Dependencies\UnityEngine.CoreModule.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.InputSystem">
+      <HintPath Condition="Exists('Dependencies\Unity.InputSystem.dll')">Dependencies\Unity.InputSystem.dll</HintPath>
     </Reference>
   </ItemGroup>
 

@@ -135,7 +135,10 @@ print_separator
 print_colored $YELLOW "📦 Copying DLLs to target location..."
 
 # Find the built DLL using the detected project name
-DLL_PATH=$(find . -name "${PROJECT_NAME}.dll" -path "*/bin/Release/*" | head -1)
+DLL_PATH="./bin/Release/net48/${PROJECT_NAME}.dll"
+if [ ! -f "$DLL_PATH" ]; then
+    DLL_PATH=$(find . -name "${PROJECT_NAME}.dll" -path "*/bin/Release/*" | grep -v "ref/" | head -1)
+fi
 
 if [ -z "$DLL_PATH" ]; then
     print_colored $RED "❌ Error: Could not find ${PROJECT_NAME}.dll in build output!"
@@ -153,6 +156,8 @@ if [ -z "$DLL_PATH" ]; then
 fi
 
 print_colored $BLUE "📄 Found main DLL: $DLL_PATH"
+BUILD_OUTPUT_DIR=$(dirname "$DLL_PATH")
+print_colored $BLUE "📁 Build output directory: $BUILD_OUTPUT_DIR"
 
 # Extract the actual DLL name from the path
 DLL_NAME=$(basename "$DLL_PATH")
@@ -176,44 +181,63 @@ else
     exit 1
 fi
 
-# Check if out.txt exists and copy additional DLLs
-if [ -f "out.txt" ]; then
-    print_colored $YELLOW "📋 Found out.txt, copying additional DLLs..."
-    
-    while IFS= read -r dll_name; do
-        # Skip empty lines
-        if [ -z "$dll_name" ]; then
-            continue
-        fi
-        
-        # Remove any whitespace/newlines
-        dll_name=$(echo "$dll_name" | tr -d '\n\r' | xargs)
-        
-        # Find the DLL in build output
-        ADDITIONAL_DLL_PATH=$(find . -name "$dll_name" -path "*/bin/Release/*" | head -1)
-        
-        if [ -n "$ADDITIONAL_DLL_PATH" ]; then
-            print_colored $BLUE "📄 Found additional DLL: $ADDITIONAL_DLL_PATH"
-            cp "$ADDITIONAL_DLL_PATH" "$TARGET_PATH/"
-            
-            if [ $? -eq 0 ]; then
-                print_colored $GREEN "✅ Copied $dll_name successfully"
-                
-                # Show file info
-                COPIED_ADDITIONAL="$TARGET_PATH/$dll_name"
-                if [ -f "$COPIED_ADDITIONAL" ]; then
-                    FILE_SIZE=$(du -h "$COPIED_ADDITIONAL" | cut -f1)
-                    print_colored $PURPLE "📊 $dll_name size: $FILE_SIZE"
-                fi
-            else
-                print_colored $RED "❌ Failed to copy $dll_name"
-            fi
-        else
-            print_colored $YELLOW "⚠️  Could not find $dll_name in build output"
-        fi
-    done < out.txt
+# Copy all runtime dependencies produced beside the main DLL.
+print_colored $YELLOW "📋 Copying runtime dependencies from build output (.dll, .so)..."
+
+COPIED_DEP_COUNT=0
+while IFS= read -r dependency_path; do
+    dependency_name=$(basename "$dependency_path")
+
+    # Main DLL was already copied above.
+    if [ "$dependency_name" = "$DLL_NAME" ]; then
+        continue
+    fi
+
+    cp "$dependency_path" "$TARGET_PATH/"
+    if [ $? -eq 0 ]; then
+        ((COPIED_DEP_COUNT++))
+        FILE_SIZE=$(du -h "$TARGET_PATH/$dependency_name" | cut -f1)
+        print_colored $GREEN "✅ Copied $dependency_name ($FILE_SIZE)"
+    else
+        print_colored $RED "❌ Failed to copy $dependency_name"
+    fi
+done < <(find "$BUILD_OUTPUT_DIR" -maxdepth 1 -type f \( -name "*.dll" -o -name "*.so" \) | sort)
+
+if [ $COPIED_DEP_COUNT -eq 0 ]; then
+    print_colored $BLUE "ℹ️  No additional runtime dependencies found beside the main DLL"
 else
-    print_colored $BLUE "ℹ️  No out.txt found, skipping additional DLLs"
+    print_colored $PURPLE "📊 Copied $COPIED_DEP_COUNT runtime dependency file(s)"
+fi
+
+# Ensure ImGui native binaries are present for both Linux and Windows game runtimes.
+IMGUI_NUGET_DIR=$(find "$HOME/.nuget/packages/imgui.net" -maxdepth 1 -mindepth 1 -type d | sort -V | tail -1)
+if [ -n "$IMGUI_NUGET_DIR" ] && [ -d "$IMGUI_NUGET_DIR" ]; then
+    WIN_CIMGUI_DLL="$IMGUI_NUGET_DIR/runtimes/win-x64/native/cimgui.dll"
+    LINUX_CIMGUI_SO="$IMGUI_NUGET_DIR/runtimes/linux-x64/native/libcimgui.so"
+
+    if [ -f "$WIN_CIMGUI_DLL" ]; then
+        cp "$WIN_CIMGUI_DLL" "$TARGET_PATH/cimgui.dll"
+        if [ $? -eq 0 ]; then
+            print_colored $GREEN "✅ Copied cimgui.dll (win-x64 native)"
+        else
+            print_colored $RED "❌ Failed to copy cimgui.dll (win-x64 native)"
+        fi
+    else
+        print_colored $YELLOW "⚠️  Could not find cimgui.dll in NuGet cache: $WIN_CIMGUI_DLL"
+    fi
+
+    if [ -f "$LINUX_CIMGUI_SO" ]; then
+        cp "$LINUX_CIMGUI_SO" "$TARGET_PATH/libcimgui.so"
+        if [ $? -eq 0 ]; then
+            print_colored $GREEN "✅ Copied libcimgui.so (linux-x64 native)"
+        else
+            print_colored $RED "❌ Failed to copy libcimgui.so (linux-x64 native)"
+        fi
+    else
+        print_colored $YELLOW "⚠️  Could not find libcimgui.so in NuGet cache: $LINUX_CIMGUI_SO"
+    fi
+else
+    print_colored $YELLOW "⚠️  ImGui.NET NuGet cache not found; skipping explicit native cimgui copy"
 fi
 
 print_separator

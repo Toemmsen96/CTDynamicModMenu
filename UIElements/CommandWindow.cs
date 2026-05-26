@@ -10,52 +10,51 @@ public partial class CTDynamicModMenu
         private List<string> commandSuggestions = new List<string>();
         private int selectedSuggestionIndex = -1;
         private Vector2 commandScrollPosition = Vector2.zero;
-        
+
         private void DrawCommandWindow()
         {
             EnableCursor();
 
-            // Define a custom GUIStyle for the box
             GUIStyle boxStyle = new GUIStyle(GUI.skin.box);
             boxStyle.border = new RectOffset(3, 3, 3, 3);
             boxStyle.normal.background = MakeTex(2, 2, new Color(0f, 0f, 0f, 0.8f));
+            boxStyle.fontSize = SI(14);
+            boxStyle.richText = true;
 
-            float windowWidth = 400f;
-            float windowHeight = 300f;
+            float windowWidth = S(400f);
+            float windowHeight = S(300f);
             float windowX = Screen.width / 2 - windowWidth / 2;
             float windowY = Screen.height / 2 - windowHeight / 2;
             Rect windowRect = new Rect(windowX, windowY, windowWidth, windowHeight);
 
             GUI.Box(windowRect, "<b><color=red>Command Window</color></b>", boxStyle);
 
-            float padding = 10f;
-            float buttonHeight = 30f;
-            float inputFieldY = windowRect.y + 40f;
-            
-            // Command input field
+            float padding = S(10f);
+            float buttonHeight = S(30f);
+            float inputFieldY = windowRect.y + S(40f);
+
+            GUIStyle inputStyle = new GUIStyle(GUI.skin.textField);
+            inputStyle.fontSize = SI(14);
+
             GUI.SetNextControlName("CommandInputField");
             string previousInput = commandInput;
-            commandInput = GUI.TextField(new Rect(windowRect.x + padding, inputFieldY, windowWidth - 2 * padding, buttonHeight), commandInput);
-            
-            // Auto-focus the input field
+            commandInput = GUI.TextField(new Rect(windowRect.x + padding, inputFieldY, windowWidth - 2 * padding, buttonHeight), commandInput, inputStyle);
+
             if (showCommandWindow && Event.current.type == EventType.Repaint)
             {
                 GUI.FocusControl("CommandInputField");
             }
 
-            // Handle input changes and update suggestions
             if (commandInput != previousInput)
             {
                 UpdateCommandSuggestions();
                 selectedSuggestionIndex = -1;
             }
 
-            // Handle keyboard events
             if (Event.current.type == EventType.KeyDown && GUI.GetNameOfFocusedControl() == "CommandInputField")
             {
                 if (Event.current.keyCode == KeyCode.Tab && commandSuggestions.Count > 0)
                 {
-                    // Tab completion
                     int index = selectedSuggestionIndex >= 0 ? selectedSuggestionIndex : 0;
                     commandInput = commandSuggestions[index];
                     selectedSuggestionIndex = -1;
@@ -84,43 +83,49 @@ public partial class CTDynamicModMenu
                 }
             }
 
-            // Display autocomplete suggestions
             if (commandSuggestions.Count > 0)
             {
-                float suggestionY = inputFieldY + buttonHeight + 5f;
-                float suggestionHeight = System.Math.Min(commandSuggestions.Count * 25f, 150f);
+                float suggestionY = inputFieldY + buttonHeight + S(5f);
+                float suggestionHeight = System.Math.Min(commandSuggestions.Count * S(25f), S(150f));
                 Rect scrollViewRect = new Rect(windowRect.x + padding, suggestionY, windowWidth - 2 * padding, suggestionHeight);
-                
-                float contentHeight = commandSuggestions.Count * 25f;
+
+                float contentHeight = commandSuggestions.Count * S(25f);
                 Rect contentRect = new Rect(0, 0, windowWidth - 2 * padding - 20, contentHeight);
-                
+
                 commandScrollPosition = GUI.BeginScrollView(scrollViewRect, commandScrollPosition, contentRect);
-                
+
                 for (int i = 0; i < commandSuggestions.Count; i++)
                 {
                     GUIStyle suggestionStyle = new GUIStyle(GUI.skin.label);
+                    suggestionStyle.fontSize = SI(13);
                     if (i == selectedSuggestionIndex)
                     {
                         suggestionStyle.normal.textColor = Color.yellow;
                         suggestionStyle.fontStyle = FontStyle.Bold;
                     }
-                    
-                    GUI.Label(new Rect(0, i * 25f, contentRect.width, 25f), commandSuggestions[i], suggestionStyle);
+
+                    GUI.Label(new Rect(0, i * S(25f), contentRect.width, S(25f)), commandSuggestions[i], suggestionStyle);
                 }
-                
+
                 GUI.EndScrollView();
             }
 
-            // Execute and Close buttons
-            float buttonWidth = 100f;
+            float buttonWidth = S(100f);
             float buttonY = windowRect.y + windowHeight - buttonHeight - padding;
-            
-            if (GUI.Button(new Rect(windowRect.x + windowWidth / 2 - buttonWidth - 10, buttonY, buttonWidth, buttonHeight), "<b><color=green>Execute</color></b>"))
+
+            GUIStyle executeStyle = new GUIStyle(GUI.skin.button);
+            executeStyle.fontSize = SI(14);
+            executeStyle.richText = true;
+            GUIStyle closeStyle = new GUIStyle(GUI.skin.button);
+            closeStyle.fontSize = SI(14);
+            closeStyle.richText = true;
+
+            if (GUI.Button(new Rect(windowRect.x + windowWidth / 2 - buttonWidth - S(10), buttonY, buttonWidth, buttonHeight), "<b><color=green>Execute</color></b>", executeStyle))
             {
                 ExecuteCommandInput();
             }
 
-            if (GUI.Button(new Rect(windowRect.x + windowWidth / 2 + 10, buttonY, buttonWidth, buttonHeight), "<b><color=red>Close</color></b>"))
+            if (GUI.Button(new Rect(windowRect.x + windowWidth / 2 + S(10), buttonY, buttonWidth, buttonHeight), "<b><color=red>Close</color></b>", closeStyle))
             {
                 showCommandWindow = false;
                 commandInput = "";
@@ -133,18 +138,18 @@ public partial class CTDynamicModMenu
         private void UpdateCommandSuggestions()
         {
             commandSuggestions.Clear();
-            
+
             if (string.IsNullOrEmpty(commandInput))
             {
                 return;
             }
 
             string input = commandInput.ToLower().Trim();
-            
+
             foreach (var command in registeredCommands)
             {
                 string commandName = command.Format.Split(' ')[0].ToLower();
-                
+
                 if (commandName.StartsWith(input))
                 {
                     commandSuggestions.Add(command.Format);
